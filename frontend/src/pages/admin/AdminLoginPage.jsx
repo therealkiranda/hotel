@@ -1,0 +1,209 @@
+// ============================================================
+// src/pages/admin/AdminLoginPage.jsx
+// FIX #12: /admin now redirects to /admin/login automatically
+//          via AdminRoute.jsx (if not authenticated)
+//          Login URL is: yourdomain.com/admin/login
+// ============================================================
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+
+export default function AdminLoginPage() {
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const [showPw, setShowPw]     = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    let success = false;
+    try {
+      const { data } = await axios.post(`${API_URL}/auth/admin/login`, { email, password });
+      localStorage.setItem('hotel_admin_token', data.token);
+      success = true;
+    } catch (err) {
+      setError(err.response?.data?.error || 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
+    if (success) navigate('/admin');
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      background: 'linear-gradient(135deg, #060f0a 0%, #0e2419 40%, #1a3c2e 100%)',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Animated background orbs */}
+      <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%',
+        background:'radial-gradient(circle, rgba(201,169,110,0.08), transparent 70%)',
+        top:'-100px', right:'-100px', animation:'float 8s ease-in-out infinite' }} />
+      <div style={{ position:'absolute', width:300, height:300, borderRadius:'50%',
+        background:'radial-gradient(circle, rgba(201,169,110,0.06), transparent 70%)',
+        bottom:'-80px', left:'-80px', animation:'float 10s ease-in-out infinite 2s' }} />
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Jost:wght@300;400;500&display=swap');
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
+        * { box-sizing:border-box; margin:0; padding:0; font-family:'Jost',sans-serif; }
+      `}</style>
+
+      {/* Left decorative panel */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center',
+        padding:'4rem', display: window.innerWidth < 900 ? 'none' : 'flex' }}>
+        <div>
+          <div style={{ fontFamily:'Cormorant Garamond,serif', color:'white', fontSize:'clamp(2rem,4vw,3.5rem)',
+            fontWeight:700, lineHeight:1.1, marginBottom:'1.5rem' }}>
+            Grand<br />
+            <em style={{ color:'#c9a96e', fontWeight:400 }}>Lumière</em>
+          </div>
+          <div style={{ fontFamily:'Jost,sans-serif', color:'rgba(255,255,255,0.5)',
+            fontSize:'0.8rem', letterSpacing:'0.25em', textTransform:'uppercase', marginBottom:'3rem' }}>
+            Hotel Management System
+          </div>
+          {[
+            ['📋','Booking Management','Real-time reservations with OTA sync'],
+            ['👔','HR Module','Employees, payroll, attendance & leave'],
+            ['🌐','OTA Channel Manager','Expedia & Booking.com integration'],
+            ['💳','Payment System','QR, cash & online payments'],
+          ].map(([icon, title, desc]) => (
+            <div key={title} style={{ display:'flex', gap:'1rem', marginBottom:'1.5rem', alignItems:'flex-start' }}>
+              <span style={{ fontSize:'1.25rem', marginTop:2 }}>{icon}</span>
+              <div>
+                <div style={{ color:'white', fontWeight:500, fontSize:'0.9rem' }}>{title}</div>
+                <div style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.8rem', marginTop:2 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Login form */}
+      <div style={{ width:'100%', maxWidth:480, display:'flex', alignItems:'center',
+        justifyContent:'center', padding:'2rem' }}>
+        <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }}
+          transition={{ duration:0.6, ease:[0.16,1,0.3,1] }}
+          style={{ background:'white', borderRadius:24, padding:'2.5rem', width:'100%',
+            boxShadow:'0 32px 80px rgba(0,0,0,0.35)' }}>
+
+          {/* Logo */}
+          <div style={{ display:'flex', alignItems:'center', gap:'0.875rem', marginBottom:'2rem' }}>
+            <div style={{ width:44, height:44, borderRadius:'50%', background:'#1a3c2e',
+              display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ fontFamily:'Cormorant Garamond,serif', color:'white', fontWeight:700, fontSize:'1.1rem' }}>GL</span>
+            </div>
+            <div>
+              <div style={{ fontFamily:'Cormorant Garamond,serif', color:'#1a3c2e', fontSize:'1.25rem', fontWeight:700, lineHeight:1 }}>
+                Admin Panel
+              </div>
+              <div style={{ fontSize:'0.68rem', color:'#94a3b8', letterSpacing:'0.15em', textTransform:'uppercase' }}>
+                Grand Lumière Hotel
+              </div>
+            </div>
+          </div>
+
+          <h2 style={{ fontFamily:'Cormorant Garamond,serif', fontSize:'1.75rem', color:'#1a3c2e',
+            marginBottom:'0.375rem', fontWeight:700 }}>Welcome back</h2>
+          <p style={{ color:'#64748b', fontSize:'0.875rem', marginBottom:'1.75rem' }}>
+            Sign in to manage your hotel
+          </p>
+
+          {error && (
+            <div style={{ background:'#fee2e2', color:'#991b1b', padding:'0.875rem 1rem',
+              borderRadius:10, fontSize:'0.875rem', marginBottom:'1.25rem',
+              display:'flex', alignItems:'center', gap:'0.5rem' }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom:'1rem' }}>
+              <label style={{ display:'block', fontSize:'0.72rem', fontWeight:600,
+                letterSpacing:'0.12em', textTransform:'uppercase', color:'#475569', marginBottom:'0.5rem' }}>
+                Email Address
+              </label>
+              <input type="email" required autoFocus value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="admin@grandlumiere.com"
+                style={{ width:'100%', padding:'0.875rem 1rem', border:'1.5px solid #e2e8f0',
+                  borderRadius:10, fontSize:'0.9rem', outline:'none', transition:'border-color 0.2s',
+                  fontFamily:'Jost,sans-serif' }}
+                onFocus={e => e.target.style.borderColor = '#1a3c2e'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+            </div>
+
+            <div style={{ marginBottom:'1.5rem' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' }}>
+                <label style={{ fontSize:'0.72rem', fontWeight:600,
+                  letterSpacing:'0.12em', textTransform:'uppercase', color:'#475569' }}>
+                  Password
+                </label>
+              </div>
+              <div style={{ position:'relative' }}>
+                <input type={showPw ? 'text' : 'password'} required value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{ width:'100%', padding:'0.875rem 3rem 0.875rem 1rem', border:'1.5px solid #e2e8f0',
+                    borderRadius:10, fontSize:'0.9rem', outline:'none', transition:'border-color 0.2s',
+                    fontFamily:'Jost,sans-serif' }}
+                  onFocus={e => e.target.style.borderColor = '#1a3c2e'}
+                  onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
+                <button type="button" onClick={() => setShowPw(v => !v)}
+                  style={{ position:'absolute', right:'0.875rem', top:'50%', transform:'translateY(-50%)',
+                    background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:'1rem' }}>
+                  {showPw ? '🙈' : '👁'}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading}
+              style={{ width:'100%', padding:'1rem', background:'#1a3c2e', color:'white',
+                border:'none', borderRadius:10, fontSize:'0.9rem', fontWeight:600,
+                cursor:loading?'not-allowed':'pointer', fontFamily:'Jost,sans-serif',
+                opacity:loading?0.75:1, transition:'all 0.2s',
+                letterSpacing:'0.05em' }}>
+              {loading ? 'Signing in…' : 'Sign In to Admin Panel'}
+            </button>
+          </form>
+
+          <div style={{ marginTop:'1.5rem', padding:'1rem', background:'#f8fafc',
+            borderRadius:10, fontSize:'0.78rem', color:'#64748b', lineHeight:1.7 }}>
+            <div style={{ fontWeight:600, color:'#475569', marginBottom:'0.375rem' }}>
+              🔑 Default credentials:
+            </div>
+            <div style={{ marginBottom:2 }}>
+              Email: <code style={{ background:'white', padding:'1px 6px', borderRadius:4, fontFamily:'monospace' }}>admin@grandlumiere.com</code>
+            </div>
+            <div>
+              Password: <code style={{ background:'white', padding:'1px 6px', borderRadius:4, fontFamily:'monospace' }}>Admin@123456</code>
+            </div>
+            <div style={{ marginTop:'0.625rem', paddingTop:'0.625rem', borderTop:'1px solid #e2e8f0', color:'#94a3b8' }}>
+              ⚠️ If login fails, run this in your backend folder:
+              <br/>
+              <code style={{ display:'block', background:'white', padding:'4px 8px', borderRadius:4,
+                marginTop:4, fontFamily:'monospace', fontSize:'0.72rem', color:'#374151' }}>
+                node scripts/reset-admin-password.js
+              </code>
+            </div>
+          </div>
+
+          <div style={{ textAlign:'center', marginTop:'1.25rem' }}>
+            <Link to="/" style={{ fontSize:'0.8rem', color:'#94a3b8', textDecoration:'none' }}>
+              ← Back to hotel website
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
