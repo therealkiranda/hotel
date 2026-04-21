@@ -76,7 +76,7 @@ router.put('/theme', async (req, res, next) => {
   try {
     const allowed = ['color_scheme','primary_color','secondary_color','accent_color','background_color',
                      'text_color','font_heading','font_body','font_accent','animation_speed',
-                     'animations_enabled','hero_type','hero_overlay_opacity','custom_css'];
+                     'animations_enabled','hero_type','hero_video_url','hero_overlay_opacity','custom_css'];
     const updates = []; const vals = [];
     allowed.forEach(f => { if (req.body[f] !== undefined) { updates.push(`${f} = ?`); vals.push(req.body[f]); } });
     if (!updates.length) return res.status(400).json({ error: 'No valid fields provided' });
