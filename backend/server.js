@@ -87,9 +87,51 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// ─── Static Files (uploads) ──────────────────────────────────
+// ─── Static Files (uploads) with video streaming support ─────
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
-app.use('/uploads', express.static(path.join(__dirname, uploadDir)));
+const fs = require('fs');
+
+app.use('/uploads', (req, res, next) => {
+  const ext = path.extname(req.path).toLowerCase();
+  const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+  if (!videoExts.includes(ext)) return next();
+
+  const mimeMap = { '.mp4':'video/mp4', '.webm':'video/webm', '.mov':'video/quicktime', '.avi':'video/x-msvideo', '.mkv':'video/x-matroska' };
+  const filePath = path.join(__dirname, uploadDir, req.path);
+
+  fs.stat(filePath, (err, stat) => {
+    if (err) return next();
+    const fileSize = stat.size;
+    const range = req.headers.range;
+
+    res.setHeader('Content-Type', mimeMap[ext] || 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunkSize = (end - start) + 1;
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Content-Length': chunkSize,
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, { 'Content-Length': fileSize });
+      fs.createReadStream(filePath).pipe(res);
+    }
+  });
+});
+
+app.use('/uploads', express.static(path.join(__dirname, uploadDir), {
+  setHeaders: (res, filePath) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
 
 // ─── Health Check ────────────────────────────────────────────
 app.get('/health', async (req, res) => {
